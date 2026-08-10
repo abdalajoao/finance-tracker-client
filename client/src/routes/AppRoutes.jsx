@@ -1,10 +1,12 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
+
 import Login from "../pages/Login/Login";
 import Signup from "../pages/Signup/Signup";
 import Dashboard from "../pages/Dashboard/Dashboard";
 import Transactions from "../pages/Transactions/Transactions";
 import Categories from "../pages/Categories/Categories";
+import MainLayout from "../layouts/MainLayout";
 
 import ProtectedRoute from "../components/ProtectedRoute";
 
@@ -20,7 +22,9 @@ function AppRoutes() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <MainLayout>
+              <Dashboard />
+            </MainLayout>            
           </ProtectedRoute>
         }
       />
