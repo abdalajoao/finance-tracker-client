@@ -8,9 +8,13 @@ import {
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
+import { useState } from "react";
+import TransactionModal from "../../components/TransactionModal";
 
 function Transactions() {
-  const transactions = [
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [transactions, setTransactions] = useState([
     {
       id: 1,
       description: "Salary",
@@ -59,7 +63,21 @@ function Transactions() {
       amount: 18.75,
       type: "expense",
     },
-  ];
+  ]);
+
+  const handleAddTransaction = (transaction) => {
+    const newTransaction = {
+      id: Date.now(),
+      ...transaction,
+    };
+
+    setTransactions((previousTransactions) => [
+      ...previousTransactions,
+      newTransaction,
+    ]);
+
+    setIsModalOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 sm:p-5 lg:p-6">
@@ -87,7 +105,10 @@ function Transactions() {
             </p>
           </div>
 
-          <button className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white transition hover:bg-blue-700">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white transition hover:bg-blue-700"
+          >
             <Plus size={20} />
             Add Transaction
           </button>
@@ -169,7 +190,7 @@ function Transactions() {
                   }`}
                 >
                   {isIncome ? "+" : "-"}€
-                  {transaction.amount.toFixed(2)}
+                  {Number(transaction.amount).toFixed(2)}
                 </div>
               </div>
             );
@@ -181,10 +202,7 @@ function Transactions() {
             const isIncome = transaction.type === "income";
 
             return (
-              <div
-                key={transaction.id}
-                className="p-5"
-              >
+              <div key={transaction.id} className="p-5">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <div
@@ -220,7 +238,7 @@ function Transactions() {
                     }`}
                   >
                     {isIncome ? "+" : "-"}€
-                    {transaction.amount.toFixed(2)}
+                    {Number(transaction.amount).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -228,6 +246,12 @@ function Transactions() {
           })}
         </div>
       </div>
+
+      <TransactionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAddTransaction={handleAddTransaction}
+      />
     </div>
   );
 }
