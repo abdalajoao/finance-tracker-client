@@ -13,6 +13,7 @@ import TransactionModal from "../../components/TransactionModal";
 
 function Transactions() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [transactions, setTransactions] = useState([
     {
@@ -79,6 +80,13 @@ function Transactions() {
     setIsModalOpen(false);
   };
 
+  const filteredTransactions = transactions.filter(
+    (transaction) =>
+      transaction.description
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-slate-50 p-4 sm:p-5 lg:p-6">
       <div className="mb-8">
@@ -126,6 +134,8 @@ function Transactions() {
             <input
               type="text"
               placeholder="Search transactions..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
               className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
@@ -146,7 +156,7 @@ function Transactions() {
             <div className="col-span-3 text-right">Amount</div>
           </div>
 
-          {transactions.map((transaction) => {
+          {filteredTransactions.map((transaction) => {
             const isIncome = transaction.type === "income";
 
             return (
@@ -198,7 +208,7 @@ function Transactions() {
         </div>
 
         <div className="divide-y divide-slate-100 md:hidden">
-          {transactions.map((transaction) => {
+          {filteredTransactions.map((transaction) => {
             const isIncome = transaction.type === "income";
 
             return (

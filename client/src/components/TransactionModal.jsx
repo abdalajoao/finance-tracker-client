@@ -7,24 +7,55 @@ function TransactionModal({ isOpen, onClose, onAddTransaction }) {
   const [type, setType] = useState("expense");
   const [category, setCategory] = useState("");
   const [date, setDate] = useState("");
+  const [error, setError] = useState("");
+   
 
   if (!isOpen) {
     return null;
   }
 
   const handleSubmit = (event) => {
-    event.preventDefault();
+  event.preventDefault();
 
-    const transaction = {
-      description,
-      amount,
-      type,
-      category,
-      date,
-    };
+  setError("");
 
-    onAddTransaction(transaction);
+  if (!description.trim()) {
+    setError("Description is required.");
+    return;
+  }
+
+  if (!amount.trim() || Number(amount) <= 0) {
+    setError("Please enter a valid amount.");
+    return;
+  }
+
+  if (!category.trim()) {
+    setError("Please select a category.");
+    return;
+  }
+
+  if (!date.trim()) {
+    setError("Please select a date.");
+    return;
+  }
+
+  const transaction = {
+    description,
+    amount,
+    type,
+    category,
+    date,
   };
+
+  onAddTransaction(transaction);
+
+  setDescription("");
+  setAmount("");
+  setType("expense");
+  setCategory("");
+  setDate("");
+  setError("");
+};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
@@ -50,6 +81,13 @@ function TransactionModal({ isOpen, onClose, onAddTransaction }) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5 p-6">
+          
+            {error && (
+            <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+            {error}
+            </div>
+            )}
+            
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">
               Description
@@ -59,7 +97,7 @@ function TransactionModal({ isOpen, onClose, onAddTransaction }) {
               type="text"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="e.g. Supermarket"
+              placeholder="e.g. Description"
               className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
