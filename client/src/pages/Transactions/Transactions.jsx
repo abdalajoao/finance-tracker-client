@@ -12,13 +12,22 @@ import { useState } from "react";
 import TransactionModal from "../../components/TransactionModal";
 
 function Transactions() {
+  // Controls whether the Add Transaction modal is open
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Stores the text entered in the search field
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Stores the selected transaction type filter
   const [typeFilter, setTypeFilter] = useState("all");
+
+  // Controls whether the filters panel is visible
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  // Available transaction type filters
   const types = ["all", "income", "expense"];
 
+  // Main transactions data
   const [transactions, setTransactions] = useState([
     {
       id: 1,
@@ -70,6 +79,7 @@ function Transactions() {
     },
   ]);
 
+  // Adds a new transaction to the transactions array
   const handleAddTransaction = (transaction) => {
     const newTransaction = {
       id: Date.now(),
@@ -84,24 +94,30 @@ function Transactions() {
     setIsModalOpen(false);
   };
 
-const filteredTransactions = transactions.filter((transaction) => {
-  const searchMatches =
-    String(transaction.description)
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase()) ||
-    String(transaction.category)
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+  // Filters transactions based on search text and transaction type
+  const filteredTransactions = transactions.filter((transaction) => {
+    // Checks if the search matches the description or category
+    const searchMatches =
+      String(transaction.description)
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      String(transaction.category)
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
 
-  const typeMatches =
-    typeFilter === "all" ||
-    transaction.type === typeFilter;
+    // Checks if the selected type matches the transaction type
+    // "all" allows every transaction type to pass
+    const typeMatches =
+      typeFilter === "all" ||
+      transaction.type === typeFilter;
 
-  return searchMatches && typeMatches;
-});
+    // Transaction must match both conditions
+    return searchMatches && typeMatches;
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 sm:p-5 lg:p-6">
+      {/* Page Header */}
       <div className="mb-8">
         <Link
           to="/dashboard"
@@ -126,6 +142,7 @@ const filteredTransactions = transactions.filter((transaction) => {
             </p>
           </div>
 
+          {/* Opens the Add Transaction modal */}
           <button
             onClick={() => setIsModalOpen(true)}
             className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white transition hover:bg-blue-700"
@@ -136,8 +153,10 @@ const filteredTransactions = transactions.filter((transaction) => {
         </div>
       </div>
 
+      {/* Search and Filters Section */}
       <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row">
+          {/* Search Input */}
           <div className="relative flex-1">
             <Search
               size={20}
@@ -153,124 +172,175 @@ const filteredTransactions = transactions.filter((transaction) => {
             />
           </div>
 
-          <button className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
-            <Filter size={18}
-            onClick={() => setIsFilterOpen(!isFilterOpen)} />
+          {/* Filters Toggle Button */}
+          <button
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+          >
+            <Filter size={18} />
             Filters
           </button>
         </div>
-      </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="hidden md:block">
-          <div className="grid grid-cols-12 border-b border-slate-200 bg-slate-50 px-6 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <div className="col-span-4">Transaction</div>
-            <div className="col-span-2">Category</div>
-            <div className="col-span-3">Date</div>
-            <div className="col-span-3 text-right">Amount</div>
-          </div>
+        {/* Filters Panel */}
+        {isFilterOpen && (
+          <div className="mt-4 border-t border-slate-200 pt-4">
+            <p className="mb-3 text-sm font-semibold text-slate-700">
+              Filter by type
+            </p>
 
-          {filteredTransactions.map((transaction) => {
-            const isIncome = transaction.type === "income";
-
-            return (
-              <div
-                key={transaction.id}
-                className="grid grid-cols-12 items-center border-b border-slate-100 px-6 py-5 last:border-b-0 hover:bg-slate-50"
-              >
-                <div className="col-span-4 flex items-center gap-3">
-                  <div
-                    className={`rounded-lg p-2 ${
-                      isIncome
-                        ? "bg-emerald-50 text-emerald-600"
-                        : "bg-red-50 text-red-600"
-                    }`}
-                  >
-                    {isIncome ? (
-                      <ArrowUpRight size={18} />
-                    ) : (
-                      <ArrowDownRight size={18} />
-                    )}
-                  </div>
-
-                  <span className="font-medium text-slate-900">
-                    {transaction.description}
-                  </span>
-                </div>
-
-                <div className="col-span-2 text-sm text-slate-500">
-                  {transaction.category}
-                </div>
-
-                <div className="col-span-3 text-sm text-slate-500">
-                  {transaction.date}
-                </div>
-
-                <div
-                  className={`col-span-3 text-right font-semibold ${
-                    isIncome
-                      ? "text-emerald-600"
-                      : "text-red-600"
+            <div className="flex flex-wrap gap-2">
+              {types.map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setTypeFilter(type)}
+                  className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
+                    typeFilter === type
+                      ? "bg-blue-600 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
                 >
-                  {isIncome ? "+" : "-"}€
-                  {Number(transaction.amount).toFixed(2)}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="divide-y divide-slate-100 md:hidden">
-          {filteredTransactions.map((transaction) => {
-            const isIncome = transaction.type === "income";
-
-            return (
-              <div key={transaction.id} className="p-5">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div
-                      className={`rounded-lg p-2 ${
-                        isIncome
-                          ? "bg-emerald-50 text-emerald-600"
-                          : "bg-red-50 text-red-600"
-                      }`}
-                    >
-                      {isIncome ? (
-                        <ArrowUpRight size={18} />
-                      ) : (
-                        <ArrowDownRight size={18} />
-                      )}
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-slate-900">
-                        {transaction.description}
-                      </p>
-
-                      <p className="mt-1 text-xs text-slate-400">
-                        {transaction.category} • {transaction.date}
-                      </p>
-                    </div>
-                  </div>
-
-                  <span
-                    className={`whitespace-nowrap text-sm font-semibold ${
-                      isIncome
-                        ? "text-emerald-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {isIncome ? "+" : "-"}€
-                    {Number(transaction.amount).toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                  {type === "all"
+                    ? "All"
+                    : type === "income"
+                    ? "Income"
+                    : "Expense"}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* Transactions List */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {filteredTransactions.length === 0 ? (
+          /* Empty State */
+          <div className="px-6 py-16 text-center">
+            <p className="text-lg font-semibold text-slate-900">
+              No transactions found
+            </p>
+
+            <p className="mt-2 text-sm text-slate-500">
+              Try adjusting your search or filters.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Desktop Transactions Table */}
+            <div className="hidden md:block">
+              <div className="grid grid-cols-12 border-b border-slate-200 bg-slate-50 px-6 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <div className="col-span-4">Transaction</div>
+                <div className="col-span-2">Category</div>
+                <div className="col-span-3">Date</div>
+                <div className="col-span-3 text-right">Amount</div>
+              </div>
+
+              {filteredTransactions.map((transaction) => {
+                const isIncome = transaction.type === "income";
+
+                return (
+                  <div
+                    key={transaction.id}
+                    className="grid grid-cols-12 items-center border-b border-slate-100 px-6 py-5 last:border-b-0 hover:bg-slate-50"
+                  >
+                    <div className="col-span-4 flex items-center gap-3">
+                      <div
+                        className={`rounded-lg p-2 ${
+                          isIncome
+                            ? "bg-emerald-50 text-emerald-600"
+                            : "bg-red-50 text-red-600"
+                        }`}
+                      >
+                        {isIncome ? (
+                          <ArrowUpRight size={18} />
+                        ) : (
+                          <ArrowDownRight size={18} />
+                        )}
+                      </div>
+
+                      <span className="font-medium text-slate-900">
+                        {transaction.description}
+                      </span>
+                    </div>
+
+                    <div className="col-span-2 text-sm text-slate-500">
+                      {transaction.category}
+                    </div>
+
+                    <div className="col-span-3 text-sm text-slate-500">
+                      {transaction.date}
+                    </div>
+
+                    <div
+                      className={`col-span-3 text-right font-semibold ${
+                        isIncome
+                          ? "text-emerald-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {isIncome ? "+" : "-"}€
+                      {Number(transaction.amount).toFixed(2)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Mobile Transactions List */}
+            <div className="divide-y divide-slate-100 md:hidden">
+              {filteredTransactions.map((transaction) => {
+                const isIncome = transaction.type === "income";
+
+                return (
+                  <div key={transaction.id} className="p-5">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div
+                          className={`rounded-lg p-2 ${
+                            isIncome
+                              ? "bg-emerald-50 text-emerald-600"
+                              : "bg-red-50 text-red-600"
+                          }`}
+                        >
+                          {isIncome ? (
+                            <ArrowUpRight size={18} />
+                          ) : (
+                            <ArrowDownRight size={18} />
+                          )}
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-slate-900">
+                            {transaction.description}
+                          </p>
+
+                          <p className="mt-1 text-xs text-slate-400">
+                            {transaction.category} • {transaction.date}
+                          </p>
+                        </div>
+                      </div>
+
+                      <span
+                        className={`whitespace-nowrap text-sm font-semibold ${
+                          isIncome
+                            ? "text-emerald-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {isIncome ? "+" : "-"}€
+                        {Number(transaction.amount).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Add Transaction Modal */}
       <TransactionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
