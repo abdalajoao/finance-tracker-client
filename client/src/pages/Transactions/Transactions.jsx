@@ -14,6 +14,10 @@ import TransactionModal from "../../components/TransactionModal";
 function Transactions() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  const types = ["all", "income", "expense"];
 
   const [transactions, setTransactions] = useState([
     {
@@ -80,12 +84,21 @@ function Transactions() {
     setIsModalOpen(false);
   };
 
-  const filteredTransactions = transactions.filter(
-    (transaction) =>
-      transaction.description
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-  );
+const filteredTransactions = transactions.filter((transaction) => {
+  const searchMatches =
+    String(transaction.description)
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase()) ||
+    String(transaction.category)
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+
+  const typeMatches =
+    typeFilter === "all" ||
+    transaction.type === typeFilter;
+
+  return searchMatches && typeMatches;
+});
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 sm:p-5 lg:p-6">
@@ -141,7 +154,8 @@ function Transactions() {
           </div>
 
           <button className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
-            <Filter size={18} />
+            <Filter size={18}
+            onClick={() => setIsFilterOpen(!isFilterOpen)} />
             Filters
           </button>
         </div>
