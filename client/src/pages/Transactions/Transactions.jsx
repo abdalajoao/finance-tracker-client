@@ -94,6 +94,12 @@ function Transactions() {
     setIsModalOpen(false);
   };
 
+  //Reset the search and type filters
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setTypeFilter("all");
+  };
+
   // Filters transactions based on search text and transaction type
   const filteredTransactions = transactions.filter((transaction) => {
     // Checks if the search matches the description or category
@@ -208,6 +214,14 @@ function Transactions() {
                 </button>
               ))}
             </div>
+
+             {/*Clear Filter Button*/} 
+              <button
+              onClick={handleClearFilters}
+              className="mt-3 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+              >
+              Clear Filters
+              </button>
           </div>
         )}
       </div>
