@@ -8,8 +8,9 @@ import {
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import TransactionModal from "../../components/TransactionModal";
+import { getTransactions } from "../../services/api";
 
 function Transactions() {
   // Controls whether the Add Transaction modal is open
@@ -27,57 +28,26 @@ function Transactions() {
   // Available transaction type filters
   const types = ["all", "income", "expense"];
 
+  // Stores the transaction currently being edited
+  const [editingTransaction, setEditingTransaction] = useState(null);
+
   // Main transactions data
-  const [transactions, setTransactions] = useState([
-    {
-      id: 1,
-      description: "Salary",
-      category: "Income",
-      date: "Aug 10, 2026",
-      amount: 3200,
-      type: "income",
-    },
-    {
-      id: 2,
-      description: "Supermarket",
-      category: "Food",
-      date: "Aug 9, 2026",
-      amount: 85.5,
-      type: "expense",
-    },
-    {
-      id: 3,
-      description: "Netflix",
-      category: "Entertainment",
-      date: "Aug 8, 2026",
-      amount: 15.99,
-      type: "expense",
-    },
-    {
-      id: 4,
-      description: "Freelance Project",
-      category: "Income",
-      date: "Aug 7, 2026",
-      amount: 450,
-      type: "income",
-    },
-    {
-      id: 5,
-      description: "Restaurant",
-      category: "Food",
-      date: "Aug 6, 2026",
-      amount: 42.5,
-      type: "expense",
-    },
-    {
-      id: 6,
-      description: "Uber",
-      category: "Transport",
-      date: "Aug 5, 2026",
-      amount: 18.75,
-      type: "expense",
-    },
-  ]);
+  const [transactions, setTransactions] = useState([]);
+
+// Loads transactions from the backend when the page opens
+useEffect(() => {
+  const loadTransactions = async () => {
+    try {
+      const data = await getTransactions();
+
+      setTransactions(data);
+    } catch (error) {
+      console.error("Failed to load transactions:", error);
+    }
+  };
+
+  loadTransactions();
+}, []);
 
   // Adds a new transaction to the transactions array
   const handleAddTransaction = (transaction) => {
@@ -94,7 +64,7 @@ function Transactions() {
     setIsModalOpen(false);
   };
 
-  //Reset the search and type filters
+  // Resets the search and type filters
   const handleClearFilters = () => {
     setSearchTerm("");
     setTypeFilter("all");
@@ -150,7 +120,10 @@ function Transactions() {
 
           {/* Opens the Add Transaction modal */}
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setEditingTransaction(null);
+              setIsModalOpen(true);
+            }}
             className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white transition hover:bg-blue-700"
           >
             <Plus size={20} />
@@ -215,13 +188,13 @@ function Transactions() {
               ))}
             </div>
 
-             {/*Clear Filter Button*/} 
-              <button
+            {/* Clear Filters Button */}
+            <button
               onClick={handleClearFilters}
               className="mt-3 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-              >
+            >
               Clear Filters
-              </button>
+            </button>
           </div>
         )}
       </div>
@@ -244,10 +217,11 @@ function Transactions() {
             {/* Desktop Transactions Table */}
             <div className="hidden md:block">
               <div className="grid grid-cols-12 border-b border-slate-200 bg-slate-50 px-6 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <div className="col-span-4">Transaction</div>
+                <div className="col-span-3">Transaction</div>
                 <div className="col-span-2">Category</div>
-                <div className="col-span-3">Date</div>
+                <div className="col-span-2">Date</div>
                 <div className="col-span-3 text-right">Amount</div>
+                <div className="col-span-2 text-right">Actions</div>
               </div>
 
               {filteredTransactions.map((transaction) => {
@@ -258,7 +232,7 @@ function Transactions() {
                     key={transaction.id}
                     className="grid grid-cols-12 items-center border-b border-slate-100 px-6 py-5 last:border-b-0 hover:bg-slate-50"
                   >
-                    <div className="col-span-4 flex items-center gap-3">
+                    <div className="col-span-3 flex items-center gap-3">
                       <div
                         className={`rounded-lg p-2 ${
                           isIncome
@@ -282,7 +256,7 @@ function Transactions() {
                       {transaction.category}
                     </div>
 
-                    <div className="col-span-3 text-sm text-slate-500">
+                    <div className="col-span-2 text-sm text-slate-500">
                       {transaction.date}
                     </div>
 
@@ -295,6 +269,19 @@ function Transactions() {
                     >
                       {isIncome ? "+" : "-"}€
                       {Number(transaction.amount).toFixed(2)}
+                    </div>
+
+                    {/* Edit Transaction Button */}
+                    <div className="col-span-2 text-right">
+                      <button
+                        onClick={() => {
+                          setEditingTransaction(transaction);
+                          setIsModalOpen(true);
+                        }}
+                        className="text-sm font-medium text-blue-600 transition hover:text-blue-700"
+                      >
+                        Edit
+                      </button>
                     </div>
                   </div>
                 );
@@ -335,16 +322,29 @@ function Transactions() {
                         </div>
                       </div>
 
-                      <span
-                        className={`whitespace-nowrap text-sm font-semibold ${
-                          isIncome
-                            ? "text-emerald-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {isIncome ? "+" : "-"}€
-                        {Number(transaction.amount).toFixed(2)}
-                      </span>
+                      <div className="flex flex-col items-end gap-2">
+                        <span
+                          className={`whitespace-nowrap text-sm font-semibold ${
+                            isIncome
+                              ? "text-emerald-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          {isIncome ? "+" : "-"}€
+                          {Number(transaction.amount).toFixed(2)}
+                        </span>
+
+                        {/* Edit Transaction Button */}
+                        <button
+                          onClick={() => {
+                            setEditingTransaction(transaction);
+                            setIsModalOpen(true);
+                          }}
+                          className="text-xs font-medium text-blue-600 transition hover:text-blue-700"
+                        >
+                          Edit
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -354,14 +354,17 @@ function Transactions() {
         )}
       </div>
 
-      {/* Add Transaction Modal */}
+      {/* Add / Edit Transaction Modal */}
       <TransactionModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingTransaction(null);
+        }}
         onAddTransaction={handleAddTransaction}
       />
     </div>
   );
 }
 
-export default Transactions;
+export default Transactions; 

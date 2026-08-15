@@ -2,74 +2,128 @@ import {
   Plus,
   Tag,
   MoreVertical,
-  ShoppingCart,
-  Car,
-  Home,
-  Utensils,
-  Gamepad2,
-  Briefcase,
   ArrowLeft,
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+
+import {
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+} from "../../services/api";
+
+import CategoryModal from "../../components/CategoryModal";
 
 function Categories() {
-  const categories = [
-    {
-      id: 1,
-      name: "Food",
-      description: "Restaurants, groceries and meals",
-      color: "bg-orange-50 text-orange-600",
-      icon: Utensils,
-      transactions: 12,
-      amount: "€285.50",
-    },
-    {
-      id: 2,
-      name: "Transport",
-      description: "Uber, fuel and public transport",
-      color: "bg-blue-50 text-blue-600",
-      icon: Car,
-      transactions: 8,
-      amount: "€142.75",
-    },
-    {
-      id: 3,
-      name: "Shopping",
-      description: "Clothes, electronics and other purchases",
-      color: "bg-purple-50 text-purple-600",
-      icon: ShoppingCart,
-      transactions: 6,
-      amount: "€320.90",
-    },
-    {
-      id: 4,
-      name: "Housing",
-      description: "Rent, utilities and home expenses",
-      color: "bg-emerald-50 text-emerald-600",
-      icon: Home,
-      transactions: 4,
-      amount: "€950.00",
-    },
-    {
-      id: 5,
-      name: "Entertainment",
-      description: "Movies, games and subscriptions",
-      color: "bg-pink-50 text-pink-600",
-      icon: Gamepad2,
-      transactions: 5,
-      amount: "€85.99",
-    },
-    {
-      id: 6,
-      name: "Work",
-      description: "Professional and business expenses",
-      color: "bg-slate-100 text-slate-600",
-      icon: Briefcase,
-      transactions: 3,
-      amount: "€120.00",
-    },
-  ];
+  // Stores categories loaded from the backend
+  const [categories, setCategories] = useState([]);
+
+  // Controls whether the category modal is open
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Stores the category currently being edited
+  const [editingCategory, setEditingCategory] = useState(null);
+
+  // Stores the category whose action menu is currently open
+  const [openMenuId, setOpenMenuId] = useState(null);
+
+  // Loads categories from the backend when the page opens
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const data = await getCategories();
+
+        setCategories(data);
+      } catch (error) {
+        console.error("Failed to load categories:", error);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
+  // Opens the modal for creating a new category
+  const handleOpenCreateModal = () => {
+    setEditingCategory(null);
+    setIsModalOpen(true);
+  };
+
+  // Opens the modal for editing an existing category
+  const handleOpenEditModal = (category) => {
+    setEditingCategory(category);
+    setIsModalOpen(true);
+  };
+
+  // Creates a new category
+  const handleCreateCategory = async (category) => {
+    try {
+      const newCategory = await createCategory(category);
+
+      setCategories((previousCategories) => [
+        ...previousCategories,
+        newCategory,
+      ]);
+    } catch (error) {
+      console.error("Failed to create category:", error);
+      throw error;
+    }
+  };
+
+  // Updates an existing category
+  const handleUpdateCategory = async (category) => {
+    try {
+      const updatedCategory = await updateCategory(
+        editingCategory._id,
+        category
+      );
+
+      setCategories((previousCategories) =>
+        previousCategories.map((item) =>
+          item._id === updatedCategory._id
+            ? updatedCategory
+            : item
+        )
+      );
+
+      setEditingCategory(null);
+    } catch (error) {
+      console.error("Failed to update category:", error);
+      throw error;
+    }
+  };
+
+  // Deletes an existing category
+  const handleDeleteCategory = async (categoryId) => {
+    try {
+      await deleteCategory(categoryId);
+
+      setCategories((previousCategories) =>
+        previousCategories.filter(
+          (category) => category._id !== categoryId
+        )
+      );
+    } catch (error) {
+      console.error("Failed to delete category:", error);
+    }
+  };
+
+  // Handles category creation or update
+  const handleCategorySubmit = async (category) => {
+    if (editingCategory) {
+      await handleUpdateCategory(category);
+    } else {
+      await handleCreateCategory(category);
+    }
+  };
+
+  // Closes the modal and clears edit mode
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingCategory(null);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 sm:p-5 lg:p-6">
@@ -97,7 +151,11 @@ function Categories() {
             </p>
           </div>
 
-          <button className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white transition hover:bg-blue-700">
+          <button
+            type="button"
+            onClick={handleOpenCreateModal}
+            className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white transition hover:bg-blue-700"
+          >
             <Plus size={20} />
             Add Category
           </button>
@@ -106,75 +164,85 @@ function Categories() {
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {categories.map((category) => {
-          const Icon = category.icon;
-
           return (
             <div
-              key={category.id}
+              key={category._id}
               className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
             >
+              {/* Category header */}
               <div className="flex items-start justify-between">
-                <div
-                  className={`rounded-xl p-3 ${category.color}`}
-                >
-                  <Icon size={22} />
+                <div className="rounded-xl bg-blue-50 p-3 text-blue-600">
+                  <Tag size={22} />
                 </div>
 
-                <button className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
-                  <MoreVertical size={20} />
-                </button>
+                {/* Category action menu */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpenMenuId(
+                        openMenuId === category._id
+                          ? null
+                          : category._id
+                      )
+                    }
+                    className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                  >
+                    <MoreVertical size={20} />
+                  </button>
+
+                  {openMenuId === category._id && (
+                    <div className="absolute right-0 top-11 z-10 w-32 rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                      {/* Edit category */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleOpenEditModal(category);
+                          setOpenMenuId(null);
+                        }}
+                        className="block w-full px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+                      >
+                        Edit
+                      </button>
+
+                      {/* Delete category */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleDeleteCategory(category._id);
+                          setOpenMenuId(null);
+                        }}
+                        className="block w-full px-4 py-2 text-left text-sm text-red-600 transition hover:bg-red-50"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
+              {/* Category information */}
               <div className="mt-5">
                 <h2 className="text-lg font-semibold text-slate-900">
                   {category.name}
                 </h2>
 
-                <p className="mt-1 min-h-[40px] text-sm text-slate-500">
-                  {category.description}
+                <p className="mt-1 text-sm text-slate-500">
+                  Type: {category.type}
                 </p>
-              </div>
-
-              <div className="mt-6 flex items-end justify-between border-t border-slate-100 pt-5">
-                <div>
-                  <p className="text-xs text-slate-400">
-                    Transactions
-                  </p>
-
-                  <p className="mt-1 font-semibold text-slate-900">
-                    {category.transactions}
-                  </p>
-                </div>
-
-                <div className="text-right">
-                  <p className="text-xs text-slate-400">
-                    Total spent
-                  </p>
-
-                  <p className="mt-1 font-semibold text-slate-900">
-                    {category.amount}
-                  </p>
-                </div>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className="mt-8 rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-          <Tag size={22} />
-        </div>
-
-        <h2 className="mt-4 text-lg font-semibold text-slate-900">
-          Manage your categories
-        </h2>
-
-        <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
-          Create and organize categories to keep your financial
-          transactions easy to understand.
-        </p>
-      </div>
+      {/* Category creation/edit modal */}
+      <CategoryModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        category={editingCategory}
+        onCategorySubmit={handleCategorySubmit}
+      />
     </div>
   );
 }

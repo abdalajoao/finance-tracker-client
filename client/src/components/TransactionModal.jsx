@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 
 function TransactionModal({ isOpen, onClose, onAddTransaction }) {
