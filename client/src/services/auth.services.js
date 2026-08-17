@@ -4,13 +4,16 @@ const API_URL = "http://localhost:5005/auth";
 
 const authService = axios.create({
   baseURL: API_URL,
-  
 });
 
+// Signup
+const signup = (userData) => {
+  return authService.post("/signup", userData);
+};
+
+// Login
 const login = (userData) => {
+  return authService.post("/login", userData);
+};
 
-    return authService.post("/login", userData)
-}
-
-
-export {login};
+export { signup, login };

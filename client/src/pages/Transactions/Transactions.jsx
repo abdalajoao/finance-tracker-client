@@ -5,12 +5,20 @@ import {
   Plus,
   Filter,
   ArrowLeft,
+  Trash2,
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+
 import TransactionModal from "../../components/TransactionModal";
-import { getTransactions } from "../../services/api";
+
+import {
+  getTransactions,
+  createTransaction,
+  updateTransaction,
+  deleteTransaction,
+} from "../../services/api";
 
 function Transactions() {
   // Controls whether the Add Transaction modal is open
@@ -34,34 +42,99 @@ function Transactions() {
   // Main transactions data
   const [transactions, setTransactions] = useState([]);
 
-// Loads transactions from the backend when the page opens
-useEffect(() => {
-  const loadTransactions = async () => {
-    try {
-      const data = await getTransactions();
+  // Loads transactions from the backend when the page opens
+  useEffect(() => {
+    const loadTransactions = async () => {
+      try {
+        const data = await getTransactions();
 
-      setTransactions(data);
+        setTransactions(data);
+      } catch (error) {
+        console.error("Failed to load transactions:", error);
+      }
+    };
+
+    loadTransactions();
+  }, []);
+
+  // Creates a new transaction or updates an existing transaction
+  const handleAddTransaction = async (transaction) => {
+    try {
+      // Prepare the data expected by the backend
+      const transactionData = {
+        title: transaction.description,
+        amount: Number(transaction.amount),
+        type: transaction.type,
+        category: transaction.category,
+        date: transaction.date,
+      };
+
+      // If a transaction is being edited, update it
+      if (editingTransaction) {
+        const updatedTransaction = await updateTransaction(
+          editingTransaction._id,
+          transactionData
+        );
+
+        // Replace the old transaction with the updated transaction
+        setTransactions((previousTransactions) =>
+          previousTransactions.map((item) =>
+            item._id === editingTransaction._id
+              ? updatedTransaction
+              : item
+          )
+        );
+
+        // Clear the editing state
+        setEditingTransaction(null);
+
+        // Close the modal
+        setIsModalOpen(false);
+
+        return;
+      }
+
+      // If there is no transaction being edited, create a new one
+      const newTransaction = await createTransaction(transactionData);
+
+      // Add the new transaction returned by MongoDB to the list
+      setTransactions((previousTransactions) => [
+        ...previousTransactions,
+        newTransaction,
+      ]);
+
+      // Close the modal after successful creation
+      setIsModalOpen(false);
     } catch (error) {
-      console.error("Failed to load transactions:", error);
+      console.error("Failed to save transaction:", error);
     }
   };
 
-  loadTransactions();
-}, []);
+  // Deletes a transaction from the backend
+  const handleDeleteTransaction = async (transactionId) => {
+    // Ask the user to confirm the deletion
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this transaction?"
+    );
 
-  // Adds a new transaction to the transactions array
-  const handleAddTransaction = (transaction) => {
-    const newTransaction = {
-      id: Date.now(),
-      ...transaction,
-    };
+    // Stop if the user cancels
+    if (!confirmed) {
+      return;
+    }
 
-    setTransactions((previousTransactions) => [
-      ...previousTransactions,
-      newTransaction,
-    ]);
+    try {
+      // Delete the transaction from MongoDB
+      await deleteTransaction(transactionId);
 
-    setIsModalOpen(false);
+      // Remove the deleted transaction from the local state
+      setTransactions((previousTransactions) =>
+        previousTransactions.filter(
+          (transaction) => transaction._id !== transactionId
+        )
+      );
+    } catch (error) {
+      console.error("Failed to delete transaction:", error);
+    }
   };
 
   // Resets the search and type filters
@@ -72,17 +145,26 @@ useEffect(() => {
 
   // Filters transactions based on search text and transaction type
   const filteredTransactions = transactions.filter((transaction) => {
-    // Checks if the search matches the description or category
+    // Get the category name when the category was populated by MongoDB
+    const categoryName =
+      typeof transaction.category === "object"
+        ? transaction.category?.name
+        : transaction.category;
+
+    // Get the transaction title from the backend
+    const transactionTitle =
+      transaction.title || transaction.description || "";
+
+    // Checks if the search matches the title or category
     const searchMatches =
-      String(transaction.description)
+      String(transactionTitle)
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      String(transaction.category)
+      String(categoryName || "")
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
 
     // Checks if the selected type matches the transaction type
-    // "all" allows every transaction type to pass
     const typeMatches =
       typeFilter === "all" ||
       transaction.type === typeFilter;
@@ -227,9 +309,17 @@ useEffect(() => {
               {filteredTransactions.map((transaction) => {
                 const isIncome = transaction.type === "income";
 
+                const transactionTitle =
+                  transaction.title || transaction.description || "";
+
+                const categoryName =
+                  typeof transaction.category === "object"
+                    ? transaction.category?.name
+                    : transaction.category;
+
                 return (
                   <div
-                    key={transaction.id}
+                    key={transaction._id || transaction.id}
                     className="grid grid-cols-12 items-center border-b border-slate-100 px-6 py-5 last:border-b-0 hover:bg-slate-50"
                   >
                     <div className="col-span-3 flex items-center gap-3">
@@ -248,16 +338,18 @@ useEffect(() => {
                       </div>
 
                       <span className="font-medium text-slate-900">
-                        {transaction.description}
+                        {transactionTitle}
                       </span>
                     </div>
 
                     <div className="col-span-2 text-sm text-slate-500">
-                      {transaction.category}
+                      {categoryName}
                     </div>
 
                     <div className="col-span-2 text-sm text-slate-500">
-                      {transaction.date}
+                      {transaction.date
+                        ? new Date(transaction.date).toLocaleDateString()
+                        : "-"}
                     </div>
 
                     <div
@@ -271,8 +363,9 @@ useEffect(() => {
                       {Number(transaction.amount).toFixed(2)}
                     </div>
 
-                    {/* Edit Transaction Button */}
-                    <div className="col-span-2 text-right">
+                    {/* Transaction Actions */}
+                    <div className="col-span-2 flex items-center justify-end gap-4">
+                      {/* Edit Transaction Button */}
                       <button
                         onClick={() => {
                           setEditingTransaction(transaction);
@@ -281,6 +374,17 @@ useEffect(() => {
                         className="text-sm font-medium text-blue-600 transition hover:text-blue-700"
                       >
                         Edit
+                      </button>
+
+                      {/* Delete Transaction Button */}
+                      <button
+                        onClick={() =>
+                          handleDeleteTransaction(transaction._id)
+                        }
+                        className="text-red-500 transition hover:text-red-700"
+                        title="Delete transaction"
+                      >
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   </div>
@@ -293,8 +397,19 @@ useEffect(() => {
               {filteredTransactions.map((transaction) => {
                 const isIncome = transaction.type === "income";
 
+                const transactionTitle =
+                  transaction.title || transaction.description || "";
+
+                const categoryName =
+                  typeof transaction.category === "object"
+                    ? transaction.category?.name
+                    : transaction.category;
+
                 return (
-                  <div key={transaction.id} className="p-5">
+                  <div
+                    key={transaction._id || transaction.id}
+                    className="p-5"
+                  >
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex min-w-0 items-center gap-3">
                         <div
@@ -313,11 +428,16 @@ useEffect(() => {
 
                         <div className="min-w-0">
                           <p className="truncate font-medium text-slate-900">
-                            {transaction.description}
+                            {transactionTitle}
                           </p>
 
                           <p className="mt-1 text-xs text-slate-400">
-                            {transaction.category} • {transaction.date}
+                            {categoryName} •{" "}
+                            {transaction.date
+                              ? new Date(
+                                  transaction.date
+                                ).toLocaleDateString()
+                              : "-"}
                           </p>
                         </div>
                       </div>
@@ -334,16 +454,30 @@ useEffect(() => {
                           {Number(transaction.amount).toFixed(2)}
                         </span>
 
-                        {/* Edit Transaction Button */}
-                        <button
-                          onClick={() => {
-                            setEditingTransaction(transaction);
-                            setIsModalOpen(true);
-                          }}
-                          className="text-xs font-medium text-blue-600 transition hover:text-blue-700"
-                        >
-                          Edit
-                        </button>
+                        {/* Transaction Actions */}
+                        <div className="flex items-center gap-3">
+                          {/* Edit Transaction Button */}
+                          <button
+                            onClick={() => {
+                              setEditingTransaction(transaction);
+                              setIsModalOpen(true);
+                            }}
+                            className="text-xs font-medium text-blue-600 transition hover:text-blue-700"
+                          >
+                            Edit
+                          </button>
+
+                          {/* Delete Transaction Button */}
+                          <button
+                            onClick={() =>
+                              handleDeleteTransaction(transaction._id)
+                            }
+                            className="text-red-500 transition hover:text-red-700"
+                            title="Delete transaction"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -362,9 +496,10 @@ useEffect(() => {
           setEditingTransaction(null);
         }}
         onAddTransaction={handleAddTransaction}
+        editingTransaction={editingTransaction}
       />
     </div>
   );
 }
 
-export default Transactions; 
+export default Transactions;
