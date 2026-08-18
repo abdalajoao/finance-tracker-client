@@ -217,7 +217,7 @@ function TransactionModal({
               type="text"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="e.g. Grocery shopping"
+              placeholder="e.g. Description"
               className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>

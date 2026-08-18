@@ -16,24 +16,74 @@ import {
   Tag,
 } from "lucide-react";
 
+import Input from "./Input";
+
 const iconOptions = [
-  { name: "Utensils", label: "Food", component: Utensils },
-  { name: "Car", label: "Transport", component: Car },
-  { name: "Home", label: "Housing", component: Home },
-  { name: "ShoppingCart", label: "Shopping", component: ShoppingCart },
-  { name: "Gamepad2", label: "Entertainment", component: Gamepad2 },
-  { name: "HeartPulse", label: "Health", component: HeartPulse },
-  { name: "Lightbulb", label: "Bills", component: Lightbulb },
+  {
+    name: "Utensils",
+    label: "Food",
+    component: Utensils,
+  },
+  {
+    name: "Car",
+    label: "Transport",
+    component: Car,
+  },
+  {
+    name: "Home",
+    label: "Housing",
+    component: Home,
+  },
+  {
+    name: "ShoppingCart",
+    label: "Shopping",
+    component: ShoppingCart,
+  },
+  {
+    name: "Gamepad2",
+    label: "Entertainment",
+    component: Gamepad2,
+  },
+  {
+    name: "HeartPulse",
+    label: "Health",
+    component: HeartPulse,
+  },
+  {
+    name: "Lightbulb",
+    label: "Bills",
+    component: Lightbulb,
+  },
   {
     name: "GraduationCap",
     label: "Education",
     component: GraduationCap,
   },
-  { name: "Wallet", label: "Salary", component: Wallet },
-  { name: "Briefcase", label: "Freelance", component: Briefcase },
-  { name: "TrendingUp", label: "Investments", component: TrendingUp },
-  { name: "Gift", label: "Other Income", component: Gift },
-  { name: "Tag", label: "Other", component: Tag },
+  {
+    name: "Wallet",
+    label: "Salary",
+    component: Wallet,
+  },
+  {
+    name: "Briefcase",
+    label: "Freelance",
+    component: Briefcase,
+  },
+  {
+    name: "TrendingUp",
+    label: "Investments",
+    component: TrendingUp,
+  },
+  {
+    name: "Gift",
+    label: "Other Income",
+    component: Gift,
+  },
+  {
+    name: "Tag",
+    label: "Other",
+    component: Tag,
+  },
 ];
 
 const colorOptions = [
@@ -153,7 +203,7 @@ function CategoryModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
 
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
@@ -174,20 +224,13 @@ function CategoryModal({
 
           {/* Category name */}
           <div className="mb-5">
-            <label
-              htmlFor="category-name"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              Category Name
-            </label>
-
-            <input
+            <Input
+              label="Category Name"
               id="category-name"
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="e.g. Food"
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500"
+              placeholder="e.g. Description"
               required
             />
           </div>
