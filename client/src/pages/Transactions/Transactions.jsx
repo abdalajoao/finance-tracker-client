@@ -9,9 +9,11 @@ import {
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+
 
 import TransactionModal from "../../components/TransactionModal";
+import ConfirmModal from "../../components/ConfirmModal";
 
 import {
   getTransactions,
@@ -42,7 +44,13 @@ function Transactions() {
   // Main transactions data
   const [transactions, setTransactions] = useState([]);
 
-  // Loads transactions from the backend when the page opens
+  // Stores the transaction waiting for delete confirmation
+  const [transactionToDelete, setTransactionToDelete] = useState(null);
+
+  // ==========================================
+  // Load transactions
+  // ==========================================
+
   useEffect(() => {
     const loadTransactions = async () => {
       try {
@@ -57,7 +65,10 @@ function Transactions() {
     loadTransactions();
   }, []);
 
-  // Creates a new transaction or updates an existing transaction
+  // ==========================================
+  // Create or update transaction
+  // ==========================================
+
   const handleAddTransaction = async (transaction) => {
     try {
       // Prepare the data expected by the backend
@@ -110,40 +121,71 @@ function Transactions() {
     }
   };
 
-  // Deletes a transaction from the backend
-  const handleDeleteTransaction = async (transactionId) => {
-    // Ask the user to confirm the deletion
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this transaction?"
+  // ==========================================
+  // Open delete confirmation
+  // ==========================================
+
+  const handleDeleteTransaction = (transactionId) => {
+    const transactionToDelete = transactions.find(
+      (transaction) => transaction._id === transactionId
     );
 
-    // Stop if the user cancels
-    if (!confirmed) {
+    if (!transactionToDelete) {
+      return;
+    }
+
+    setTransactionToDelete(transactionToDelete);
+  };
+
+  // ==========================================
+  // Confirm delete transaction
+  // ==========================================
+
+  const handleConfirmDelete = async () => {
+    if (!transactionToDelete) {
       return;
     }
 
     try {
       // Delete the transaction from MongoDB
-      await deleteTransaction(transactionId);
+      await deleteTransaction(transactionToDelete._id);
 
-      // Remove the deleted transaction from the local state
+      // Remove the deleted transaction from local state
       setTransactions((previousTransactions) =>
         previousTransactions.filter(
-          (transaction) => transaction._id !== transactionId
+          (transaction) =>
+            transaction._id !== transactionToDelete._id
         )
       );
+
+      // Close the confirmation modal
+      setTransactionToDelete(null);
     } catch (error) {
       console.error("Failed to delete transaction:", error);
     }
   };
 
-  // Resets the search and type filters
+  // ==========================================
+  // Close delete confirmation
+  // ==========================================
+
+  const handleCloseDeleteModal = () => {
+    setTransactionToDelete(null);
+  };
+
+  // ==========================================
+  // Reset filters
+  // ==========================================
+
   const handleClearFilters = () => {
     setSearchTerm("");
     setTypeFilter("all");
   };
 
-  // Filters transactions based on search text and transaction type
+  // ==========================================
+  // Filter transactions
+  // ==========================================
+
   const filteredTransactions = transactions.filter((transaction) => {
     // Get the category name when the category was populated by MongoDB
     const categoryName =
@@ -175,7 +217,11 @@ function Transactions() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 sm:p-5 lg:p-6">
-      {/* Page Header */}
+
+      {/* ==========================================
+          Page Header
+      ========================================== */}
+
       <div className="mb-8">
         <Link
           to="/dashboard"
@@ -214,9 +260,13 @@ function Transactions() {
         </div>
       </div>
 
-      {/* Search and Filters Section */}
+      {/* ==========================================
+          Search and Filters Section
+      ========================================== */}
+
       <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row">
+
           {/* Search Input */}
           <div className="relative flex-1">
             <Search
@@ -228,7 +278,9 @@ function Transactions() {
               type="text"
               placeholder="Search transactions..."
               value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
+              onChange={(event) =>
+                setSearchTerm(event.target.value)
+              }
               className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
@@ -281,9 +333,14 @@ function Transactions() {
         )}
       </div>
 
-      {/* Transactions List */}
+      {/* ==========================================
+          Transactions List
+      ========================================== */}
+
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+
         {filteredTransactions.length === 0 ? (
+
           /* Empty State */
           <div className="px-6 py-16 text-center">
             <p className="text-lg font-semibold text-slate-900">
@@ -294,23 +351,45 @@ function Transactions() {
               Try adjusting your search or filters.
             </p>
           </div>
+
         ) : (
           <>
-            {/* Desktop Transactions Table */}
+            {/* ==========================================
+                Desktop Transactions Table
+            ========================================== */}
+
             <div className="hidden md:block">
+
               <div className="grid grid-cols-12 border-b border-slate-200 bg-slate-50 px-6 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <div className="col-span-3">Transaction</div>
-                <div className="col-span-2">Category</div>
-                <div className="col-span-2">Date</div>
-                <div className="col-span-3 text-right">Amount</div>
-                <div className="col-span-2 text-right">Actions</div>
+                <div className="col-span-3">
+                  Transaction
+                </div>
+
+                <div className="col-span-2">
+                  Category
+                </div>
+
+                <div className="col-span-2">
+                  Date
+                </div>
+
+                <div className="col-span-3 text-right">
+                  Amount
+                </div>
+
+                <div className="col-span-2 text-right">
+                  Actions
+                </div>
               </div>
 
               {filteredTransactions.map((transaction) => {
-                const isIncome = transaction.type === "income";
+                const isIncome =
+                  transaction.type === "income";
 
                 const transactionTitle =
-                  transaction.title || transaction.description || "";
+                  transaction.title ||
+                  transaction.description ||
+                  "";
 
                 const categoryName =
                   typeof transaction.category === "object"
@@ -322,6 +401,8 @@ function Transactions() {
                     key={transaction._id || transaction.id}
                     className="grid grid-cols-12 items-center border-b border-slate-100 px-6 py-5 last:border-b-0 hover:bg-slate-50"
                   >
+
+                    {/* Transaction */}
                     <div className="col-span-3 flex items-center gap-3">
                       <div
                         className={`rounded-lg p-2 ${
@@ -342,16 +423,21 @@ function Transactions() {
                       </span>
                     </div>
 
+                    {/* Category */}
                     <div className="col-span-2 text-sm text-slate-500">
                       {categoryName}
                     </div>
 
+                    {/* Date */}
                     <div className="col-span-2 text-sm text-slate-500">
                       {transaction.date
-                        ? new Date(transaction.date).toLocaleDateString()
+                        ? new Date(
+                            transaction.date
+                          ).toLocaleDateString()
                         : "-"}
                     </div>
 
+                    {/* Amount */}
                     <div
                       className={`col-span-3 text-right font-semibold ${
                         isIncome
@@ -365,7 +451,8 @@ function Transactions() {
 
                     {/* Transaction Actions */}
                     <div className="col-span-2 flex items-center justify-end gap-4">
-                      {/* Edit Transaction Button */}
+
+                      {/* Edit Transaction */}
                       <button
                         onClick={() => {
                           setEditingTransaction(transaction);
@@ -376,29 +463,39 @@ function Transactions() {
                         Edit
                       </button>
 
-                      {/* Delete Transaction Button */}
+                      {/* Delete Transaction */}
                       <button
                         onClick={() =>
-                          handleDeleteTransaction(transaction._id)
+                          handleDeleteTransaction(
+                            transaction._id
+                          )
                         }
                         className="text-red-500 transition hover:text-red-700"
                         title="Delete transaction"
                       >
                         <Trash2 size={18} />
                       </button>
+
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            {/* Mobile Transactions List */}
+            {/* ==========================================
+                Mobile Transactions List
+            ========================================== */}
+
             <div className="divide-y divide-slate-100 md:hidden">
+
               {filteredTransactions.map((transaction) => {
-                const isIncome = transaction.type === "income";
+                const isIncome =
+                  transaction.type === "income";
 
                 const transactionTitle =
-                  transaction.title || transaction.description || "";
+                  transaction.title ||
+                  transaction.description ||
+                  "";
 
                 const categoryName =
                   typeof transaction.category === "object"
@@ -411,7 +508,9 @@ function Transactions() {
                     className="p-5"
                   >
                     <div className="flex items-center justify-between gap-4">
+
                       <div className="flex min-w-0 items-center gap-3">
+
                         <div
                           className={`rounded-lg p-2 ${
                             isIncome
@@ -440,9 +539,11 @@ function Transactions() {
                               : "-"}
                           </p>
                         </div>
+
                       </div>
 
                       <div className="flex flex-col items-end gap-2">
+
                         <span
                           className={`whitespace-nowrap text-sm font-semibold ${
                             isIncome
@@ -456,10 +557,14 @@ function Transactions() {
 
                         {/* Transaction Actions */}
                         <div className="flex items-center gap-3">
-                          {/* Edit Transaction Button */}
+
+                          {/* Edit Transaction */}
                           <button
                             onClick={() => {
-                              setEditingTransaction(transaction);
+                              setEditingTransaction(
+                                transaction
+                              );
+
                               setIsModalOpen(true);
                             }}
                             className="text-xs font-medium text-blue-600 transition hover:text-blue-700"
@@ -467,18 +572,22 @@ function Transactions() {
                             Edit
                           </button>
 
-                          {/* Delete Transaction Button */}
+                          {/* Delete Transaction */}
                           <button
                             onClick={() =>
-                              handleDeleteTransaction(transaction._id)
+                              handleDeleteTransaction(
+                                transaction._id
+                              )
                             }
                             className="text-red-500 transition hover:text-red-700"
                             title="Delete transaction"
                           >
                             <Trash2 size={16} />
                           </button>
+
                         </div>
                       </div>
+
                     </div>
                   </div>
                 );
@@ -488,7 +597,10 @@ function Transactions() {
         )}
       </div>
 
-      {/* Add / Edit Transaction Modal */}
+      {/* ==========================================
+          Add / Edit Transaction Modal
+      ========================================== */}
+
       <TransactionModal
         isOpen={isModalOpen}
         onClose={() => {
@@ -498,6 +610,25 @@ function Transactions() {
         onAddTransaction={handleAddTransaction}
         editingTransaction={editingTransaction}
       />
+
+      {/* ==========================================
+          Delete Confirmation Modal
+      ========================================== */}
+
+      <ConfirmModal
+        isOpen={Boolean(transactionToDelete)}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+        title="Delete Transaction?"
+        message={
+          transactionToDelete
+            ? `Are you sure you want to delete "${transactionToDelete.title || transactionToDelete.description}"?`
+            : ""
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
+
     </div>
   );
 }

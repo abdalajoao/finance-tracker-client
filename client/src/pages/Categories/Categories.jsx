@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   getCategories,
@@ -30,6 +30,7 @@ import {
 } from "../../services/api";
 
 import CategoryModal from "../../components/CategoryModal";
+import ConfirmModal from "../../components/ConfirmModal";
 
 // ==========================================
 // Icon mapping
@@ -84,6 +85,12 @@ function Categories() {
   // Controls which three-dot menu is open
   const [openMenuId, setOpenMenuId] = useState(null);
 
+  // Category waiting for delete confirmation
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
+
+  // Reference to the currently open three-dot menu
+  const menuRef = useRef(null);
+
   // ==========================================
   // Load categories
   // ==========================================
@@ -100,6 +107,33 @@ function Categories() {
     };
 
     loadCategories();
+  }, []);
+
+  // ==========================================
+  // Close three-dot menu when clicking outside
+  // ==========================================
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target)
+      ) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener(
+      "mousedown",
+      handleClickOutside
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside
+      );
+    };
   }, []);
 
   // ==========================================
@@ -169,10 +203,10 @@ function Categories() {
   };
 
   // ==========================================
-  // Delete category
+  // Open delete confirmation
   // ==========================================
 
-  const handleDeleteCategory = async (categoryId) => {
+  const handleDeleteCategory = (categoryId) => {
     const categoryToDelete = categories.find(
       (category) => category._id === categoryId
     );
@@ -181,28 +215,36 @@ function Categories() {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${categoryToDelete.name}"?`
-    );
+    setCategoryToDelete(categoryToDelete);
+    setOpenMenuId(null);
+  };
 
-    if (!confirmed) {
+  // ==========================================
+  // Confirm delete category
+  // ==========================================
+
+  const handleConfirmDelete = async () => {
+    if (!categoryToDelete) {
       return;
     }
 
     try {
-      await deleteCategory(categoryId);
+      await deleteCategory(categoryToDelete._id);
 
       setCategories((previousCategories) =>
         previousCategories.filter(
-          (category) => category._id !== categoryId
+          (category) =>
+            category._id !== categoryToDelete._id
         )
       );
 
-      setOpenMenuId(null);
+      setCategoryToDelete(null);
     } catch (error) {
       console.error("Failed to delete category:", error);
 
-      alert("Failed to delete category. Please try again.");
+      alert(
+        "Failed to delete category. Please try again."
+      );
     }
   };
 
@@ -219,7 +261,7 @@ function Categories() {
   };
 
   // ==========================================
-  // Close modal
+  // Close category modal
   // ==========================================
 
   const handleCloseModal = () => {
@@ -228,7 +270,15 @@ function Categories() {
   };
 
   // ==========================================
-  // Toggle menu
+  // Close delete confirmation
+  // ==========================================
+
+  const handleCloseDeleteModal = () => {
+    setCategoryToDelete(null);
+  };
+
+  // ==========================================
+  // Toggle three-dot menu
   // ==========================================
 
   const handleToggleMenu = (categoryId) => {
@@ -306,9 +356,7 @@ function Categories() {
               className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
             >
 
-              {/* ==========================================
-                  Card Header
-              ========================================== */}
+              {/* Card Header */}
 
               <div className="flex items-start justify-between">
 
@@ -319,7 +367,11 @@ function Categories() {
                 </div>
 
                 {/* Three dots menu */}
-                <div className="relative">
+
+                <div
+                  ref={isMenuOpen ? menuRef : null}
+                  className="relative"
+                >
 
                   <button
                     type="button"
@@ -327,15 +379,18 @@ function Categories() {
                       handleToggleMenu(category._id)
                     }
                     className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                    aria-label="Category options"
                   >
                     <MoreVertical size={20} />
                   </button>
 
                   {/* Dropdown */}
+
                   {isMenuOpen && (
                     <div className="absolute right-0 top-11 z-20 w-40 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
 
                       {/* Edit */}
+
                       <button
                         type="button"
                         onClick={() =>
@@ -348,6 +403,7 @@ function Categories() {
                       </button>
 
                       {/* Delete */}
+
                       <button
                         type="button"
                         onClick={() =>
@@ -366,9 +422,7 @@ function Categories() {
 
               </div>
 
-              {/* ==========================================
-                  Category Information
-              ========================================== */}
+              {/* Category Information */}
 
               <div className="mt-5">
 
@@ -400,6 +454,24 @@ function Categories() {
         onClose={handleCloseModal}
         category={editingCategory}
         onCategorySubmit={handleCategorySubmit}
+      />
+
+      {/* ==========================================
+          Delete Confirmation Modal
+      ========================================== */}
+
+      <ConfirmModal
+        isOpen={Boolean(categoryToDelete)}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+        title="Delete Category?"
+        message={
+          categoryToDelete
+            ? `Are you sure you want to delete "${categoryToDelete.name}"?`
+            : ""
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
       />
 
     </div>
