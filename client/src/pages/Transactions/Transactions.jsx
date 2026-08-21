@@ -9,9 +9,10 @@ import {
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 
 
+import Toast from "../../components/Toast";
 import TransactionModal from "../../components/TransactionModal";
 import ConfirmModal from "../../components/ConfirmModal";
 
@@ -47,6 +48,8 @@ function Transactions() {
   // Stores the transaction waiting for delete confirmation
   const [transactionToDelete, setTransactionToDelete] = useState(null);
 
+  const [toast, setToast] = useState(null);
+
   // ==========================================
   // Load transactions
   // ==========================================
@@ -59,6 +62,11 @@ function Transactions() {
         setTransactions(data);
       } catch (error) {
         console.error("Failed to load transactions:", error);
+
+        setToast({
+          message: "Failed to load transactions.",
+          type: "error",
+        });
       }
     };
 
@@ -102,6 +110,11 @@ function Transactions() {
         // Close the modal
         setIsModalOpen(false);
 
+        setToast({
+          message: "Transaction updated successfully!",
+          type: "success",
+        });
+
         return;
       }
 
@@ -116,8 +129,18 @@ function Transactions() {
 
       // Close the modal after successful creation
       setIsModalOpen(false);
+
+      setToast({
+        message: "Transaction created successfully!",
+        type: "success",
+      });
     } catch (error) {
       console.error("Failed to save transaction:", error);
+
+      setToast({
+        message: "Failed to save transaction.",
+        type: "error",
+      });
     }
   };
 
@@ -160,8 +183,18 @@ function Transactions() {
 
       // Close the confirmation modal
       setTransactionToDelete(null);
+
+      setToast({
+        message: "Transaction deleted successfully!",
+        type: "success",
+      });
     } catch (error) {
       console.error("Failed to delete transaction:", error);
+
+      setToast({
+        message: "Failed to delete transaction.",
+        type: "error",
+      });
     }
   };
 
@@ -596,6 +629,14 @@ function Transactions() {
           </>
         )}
       </div>
+
+      {toast && (
+        <Toast
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast(null)}
+      />
+      )}
 
       {/* ==========================================
           Add / Edit Transaction Modal
