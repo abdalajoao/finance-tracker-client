@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:5005";
+const API_URL = "https://finance-tracker-server-w158.onrender.com";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("authToken");
